@@ -16,19 +16,20 @@ export async function GetFormsStats() {
     },
     _sum: {
       visits: true,
-      submission: true,
+      submissions: true,
     },
   });
 
   const visits = (await stats)._sum.visits || 0;
-  const submissions = (await stats)._sum.submission || 0;
+  const submissions = (await stats)._sum.submissions || 0;
 
   let submissionRate = 0;
+  let bounceRate = 0;
 
   if (visits > 0) {
     submissionRate = (submissions / visits) * 100;
+    bounceRate = 100 - submissionRate;
   }
-  const bounceRate = 100 - submissionRate;
 
   return {
     visits,
@@ -78,6 +79,120 @@ export async function GetForms() {
     },
     orderBy: {
       createdAt: "desc",
+    },
+  });
+}
+
+export async function GetFormById(id: number) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const result = await prisma.form.findUnique({
+    where: {
+      userId: userId,
+      id: id,
+    },
+  });
+  return result;
+}
+
+export async function UpdateFormContext(id: number, jsonContent: string) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  return await prisma.form.update({
+    where: {
+      userId: userId,
+      id,
+    },
+    data: {
+      content: jsonContent,
+    },
+  });
+}
+
+export async function PublishForm(id: number) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  return await prisma.form.update({
+    data: {
+      published: true,
+    },
+    where: {
+      userId: userId,
+      id,
+    },
+  });
+}
+
+export async function GetFormControlByUrl(formUrl: string) {
+  return await prisma.form.update({
+    select: {
+      content: true,
+    },
+    data: {
+      visits: {
+        increment: 1,
+      },
+    },
+    where: {
+      shareURL: formUrl,
+    },
+  });
+}
+
+export async function SubmitForm(formUrl: string, content: string) {
+  return await prisma.form.update({
+    data: {
+      submissions: {
+        increment: 1,
+      },
+      FormSubmission: {
+        create: {
+          content,
+        },
+      },
+    },
+    where: {
+      shareURL: formUrl,
+      published: true,
+    },
+  });
+}
+
+export async function GetFormWithSubmissions(id: number) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  return await prisma.form.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      FormSubmission: true,
+    },
+  });
+}
+
+export async function DeleteForm(id: number) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  return await prisma.form.delete({
+    where: {
+      id,
+      userId,
     },
   });
 }

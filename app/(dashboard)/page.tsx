@@ -20,6 +20,9 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistance } from "date-fns";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { BiRightArrowAlt } from "react-icons/bi";
+import { FaEdit } from "react-icons/fa";
+import DeleteBtn from "@/components/DeleteBtn";
 
 function Home() {
   return (
@@ -97,7 +100,7 @@ function StatsCards(props: StatsCardProps) {
   );
 }
 
-function StatsCard({
+export function StatsCard({
   title,
   icon,
   value,
@@ -156,8 +159,11 @@ function FormCard({ form }: { form: Form }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 justify-between">
           <span className="truncate font-bold">{form.name}</span>
-          {form.published && <Badge>Published</Badge>}
+          <div className="flex gap-2">
+            {form.published && <Badge>Published</Badge>}
           {!form.published && <Badge variant={"destructive"}>Draft</Badge>}
+          <DeleteBtn id={form.id}/>
+          </div>
         </CardTitle>
         <CardDescription className="flex items-center justify-between text-muted-foreground text-sm">
           {formatDistance(form.createdAt, new Date(), {
@@ -168,7 +174,7 @@ function FormCard({ form }: { form: Form }) {
               <LuView className="text-muted-foreground" />
               <span>{form.visits.toLocaleString()}</span>
               <FaWpforms className="text-muted-foreground" />
-              <span>{form.submission.toLocaleString()}</span>
+              <span>{form.submissions.toLocaleString()}</span>
             </span>
           )}
         </CardDescription>
@@ -178,9 +184,20 @@ function FormCard({ form }: { form: Form }) {
       </CardContent>
       <CardFooter>
         {form.published && (
-          <Button>
+          <Button asChild className="w-full mt-2 text-md gap-4">
             <Link href={`/forms/${form.id}`} className="">
-            
+              View Submissions <BiRightArrowAlt />
+            </Link>
+          </Button>
+        )}
+        {!form.published && (
+          <Button
+            asChild
+            variant={"secondary"}
+            className="w-full mt-2 text-md gap-4"
+          >
+            <Link href={`/builder/${form.id}`} className="">
+              Edit form <FaEdit />
             </Link>
           </Button>
         )}
