@@ -196,3 +196,49 @@ export async function DeleteForm(id: number) {
     },
   });
 }
+
+export async function getSubmissionsByFormId(formId: number) {
+  const { userId } = await auth()
+  if (!userId) throw new Error("Unauthorized")
+
+  const form = await prisma.form.findUnique({
+    where: { id: formId, userId },
+    include: { FormSubmission: true },
+  })
+
+  if (!form) return { form: null, submissions: [] }
+
+  // parse submissions
+  const submissions = form.FormSubmission.map((s) => {
+    const content = JSON.parse(s.content)
+    return {
+      ...content,
+      submittedAt: s.createdAt.toISOString(),
+    }
+  })
+
+  return { form: JSON.parse(form.content), submissions }
+}
+
+export async function DeleteSubmissions(ids: number[]) {
+  const { userId } = await auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!ids || ids.length === 0) {
+    throw new Error("No submission IDs provided");
+  }
+
+  // Ensure submissions belong to forms owned by this user
+  await prisma.formSubmission.deleteMany({
+    where: {
+      id: { in: ids },
+      form: {
+        userId: userId,
+      },
+    },
+  });
+
+  return { success: true };
+}
